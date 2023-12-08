@@ -1,0 +1,34 @@
+{
+  "name": "data-player",
+  "version": "0.1.1",
+  "description": "in memory data layer for fast access to plain normalized data",
+  "type": "module",
+  "exports": {
+    "./": "./src/"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/basis-company/data-player.js.git"
+  },
+  "keywords": [
+    "data",
+    "collection",
+    "model",
+    "traversal"
+  ],
+  "author": {
+    "name": "Ilya Anisimov",
+    "email": "litstat@gmail.com"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/basis-company/data-player.js/issues"
+  },
+  "homepage": "https://github.com/basis-company/data-player.js#readme",
+  "dependencies": {
+    "underscore": "^1.13.6"
+  }
+}
