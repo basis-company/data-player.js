@@ -183,12 +183,17 @@ function info(field) {
   }
 
   if (property && property.reference) {
+    m    = model(property.reference);
+    ids  = m.idFields;
+    name = property.property;
+
     // Поле "field" присутствует в исходной модели.
     // Пример query: поиск значения в справочнике
     return {
       field,
-      model: model(property.reference).aka,
-      index: 'id',
+      // inverse: this.aka + '@' + field,
+      model: m.aka,
+      index: ids && ids.length === 1 && ids[0] !== name ? name : 'id',
     };
   }
 
