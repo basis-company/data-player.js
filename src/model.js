@@ -10,7 +10,7 @@ import { memoize } from 'helpers/memoize';
 import { transform } from 'helpers/transform';
 import { uniq } from 'helpers/uniq';
 
-import { fetchRefId, model, opt } from './data';
+import { fetchRefId, model, oneElArr, opt } from './data';
 import { doSequence, parse } from './query';
 
 export function register(proto) {
@@ -93,63 +93,11 @@ export class Basic {
   create(o) {
     return new this.constructor(o);
   }
-
-  produce(fields, dst) {
-    if (!dst) {
-      dst = nativeCreate(this);
-    }
-
-    for (var i = 0; i < fields.length; i++) {
-      var field =
-        fields[i].name ||
-        fields[i];
-
-      var v = dst[field] = this.get(field);
-
-      if (isUndefined(v)) {
-        dst[field] = null;
-      }
-    }
-
-    return dst;
-  }
-
-  get(k) {
-    if (k.indexOf(' ') !== -1) {
-      return k.split(' ')
-        .map(map, this)
-        .filter(filter)
-        .join(' ');
-    }
-
-    // get id of the instance if the last field is reference or collection
-    var values = this.query(k, fetchRefId);
-
-    if (!nativeIsArray(values)) {
-      // query contains selector
-      return values;
-    }
-
-    if (values.length > 1) {
-      return values
-        .filter(filter)
-        .join(', ');
-    }
-
-    return values[0];
-  }
-
-  query(query, options) {
-    var sequence = this._parse(query);
-
-    oneElArr[0] = this;
-
-    return doSequence(oneElArr, sequence, options);
-  }
 }
 
-const oneElArr = [ null ];
-const fieldRe = /[a-zA-Z]/;
+applyOwn(Basic.prototype, {
+  get, produce, query,
+});
 
 function id(dst, fields, values) {
   if (fields.length > 1) {
@@ -163,12 +111,67 @@ function id(dst, fields, values) {
   return dst[fields[0]];
 }
 
+function produce(fields, dst) {
+  if (!dst) {
+    dst = nativeCreate(this);
+  }
+
+  for (var i = 0; i < fields.length; i++) {
+    var field =
+      fields[i].name ||
+      fields[i];
+
+    var v = dst[field] = this.get(field);
+
+    if (isUndefined(v)) {
+      dst[field] = null;
+    }
+  }
+
+  return dst;
+}
+
+function get(k) {
+  if (k.indexOf(' ') !== -1) {
+    return k.split(' ')
+      .map(map, this)
+      .filter(filter)
+      .join(' ');
+  }
+
+  // get id of the instance if the last field is reference or collection
+  var values = this.query(k, fetchRefId);
+
+  if (!nativeIsArray(values)) {
+    // query contains selector
+    return values;
+  }
+
+  if (values.length > 1) {
+    return values
+      .filter(filter)
+      .join(', ');
+  }
+
+  return values[0];
+}
+
+const fieldRe = /[a-zA-Z]/;
+
 function map(k) {
   return fieldRe.test(k[0]) ? this.get(k) : k;
 }
 
 function filter(v) {
   return !isUndefined(v) && v !== '';
+}
+
+function query(query, options) {
+  var sequence = this._parse(query);
+
+  oneElArr[0] = this;
+
+  return doSequence(oneElArr, sequence, options);
 }
 
 // Интерпретация результата:

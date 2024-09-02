@@ -17,6 +17,7 @@ export const data = {
 };
 
 export const fetchRefId = { fetchRefId: true };
+export const oneElArr = [ null ];
 
 export const opt = {
   akaRe: '',
