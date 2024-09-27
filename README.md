@@ -7,6 +7,25 @@ in memory data layer for fast access to plain normalized data
 npm install basis-company/data-player.js basis-company/helpers.js
 ```
 
+### contents
+
+Модель ([model](src/model.js)) описывает состав собственных и виртуальных полей сущности.
+
+Коллекция ([collection](src/collection.js)) определённой модели содержит записи с данными,
+распределённые по древовидным индексам ([index](src/index.js)).
+
+Вью ([view](src/view.js)) определённой модели
+- загружает экпедитором на основе полей основные и зависимые записи,
+- генерирует по ним новые записи для представления,
+- поддерживает актуальность новых записей при изменении исходных записей.
+
+Экпедитор ([expeditor](src/expeditor.js)) на основе полей производит каскадную выборку ([cascade](src/cascade.js)) из коллекций при помощи загрузчика.
+
+Загрузчик ([loader](src/loader.js))
+- получает записи из коллекции, если запрос повторный ([similar](src/similar.js)),
+- или загружает записи с сервера ([request](src/request.js)) в пределах зоны доступности данных (*scope*),
+- проверяет наличие запрошенных записей и догружает их, если они вне зоны доступности ([extra](src/extra.js)).
+
 ### set model structure
 
 ```js
@@ -242,17 +261,10 @@ findOne('user', 1)
 import { Collection } from 'data-player/collection';
 
 var proto = Collection.prototype;
-var splice = proto.splice;
 
 // make Collection eventable by external kit
 proto.on = observable.addListener;
 proto.fireEvent = observable.fireEvent;
-
-// bind event trigger
-proto.splice = function splice(records) {
-  splice.apply(this, arguments);
-  this.fireEvent('change', records);
-};
 
 // listen to changes
 collection('user').on('change', function onChange(records) {
@@ -265,6 +277,14 @@ collection('user').on('change', function onChange(records) {
 ```js
 import { View } from 'data-player/view';
 
+var proto = View.prototype;
+
+// make View eventable by external kit
+// changes in collection will apply to records in view
+proto.on = observable.addListener;
+proto.mon = observable.addManagedListener;
+proto.fireEvent = observable.fireEvent;
+
 var view = new View({
   model: 'user',
   fields: [
@@ -275,16 +295,18 @@ var view = new View({
   ],
 });
 
+// load all records from 'user' collection
+view.load();
+
+// "view was loaded"
 view.on('refresh', function(view, data, expeditor) {
   // update 'data' in ui
 });
 
+// "some data was changed"
 view.on('update', function(view, data, expeditor) {
   // update 'data' in ui
 });
-
-// load all records from 'user' collection
-view.load();
 ```
 
 id | firstname lastname | company.name | roles
@@ -292,29 +314,3 @@ id | firstname lastname | company.name | roles
 1 | Helen Fletcher | Google | admin, manager
 2 | Jacob Evans | Microsoft | manager
 3 | Lloyd Henry | Microsoft | manager
-
-### data view events
-
-```js
-import { View } from 'data-player/view';
-
-var proto = View.prototype;
-var finalize = proto.finalize;
-
-// make View eventable by external kit
-proto.on = observable.addListener;
-proto.mon = observable.addManagedListener;
-proto.fireEvent = observable.fireEvent;
-
-// changes in collection will apply to records in view
-proto.monCollection = function monCollection(c) {
-  this.mon(c, 'change', this.applyChanges, this);
-};
-
-// fire event on "view was loaded" or "some data was changed"
-proto.finalize = function finalize(expeditor, data, event) {
-  finalize.apply(this, arguments);
-  // event = 'refresh' | 'update'
-  this.fireEvent(event, this, data, expeditor);
-};
-```
