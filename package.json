@@ -1,6 +1,6 @@
 {
   "name": "data-player",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "description": "in memory data layer for fast access to plain normalized data",
   "type": "module",
   "exports": {
