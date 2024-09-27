@@ -3,6 +3,7 @@ import { nativeIsArray } from 'underscore/modules/_setup.js';
 import isFunction from 'underscore/modules/isFunction.js';
 import isUndefined from 'underscore/modules/isUndefined.js';
 
+import { append } from 'helpers/append';
 import { array } from 'helpers/array';
 import { uniq } from 'helpers/uniq';
 
@@ -81,9 +82,7 @@ function doField(records, step, options) {
       // continue;
     }
     else if (nativeIsArray(result)) {
-      if (result.length > 0) {
-        next.push(...result);
-      }
+      append(next, result);
     }
     else {
       next.push(result);

@@ -1,5 +1,6 @@
 import { nativeIsArray } from 'underscore/modules/_setup.js';
 
+import { append } from 'helpers/append';
 import { copyOwn } from 'helpers/copy';
 import { push } from 'helpers/push';
 import { remove } from 'helpers/remove';
@@ -34,10 +35,8 @@ export class Index {
       }
     }
 
-    if ((records = this.records(params))) {
-      for (var i = 0, records; i * max < records.length;) {
-        buffer.push(...records.slice(i * max, ++i * max));
-      }
+    if ((a = this.records(params))) {
+      append(buffer, a);
     }
 
     return buffer;
@@ -86,8 +85,6 @@ export class Index {
     push(data, v, o);
   }
 }
-
-const max = 256 * 256;
 
 function kv(o, k) {
   if (k) {
