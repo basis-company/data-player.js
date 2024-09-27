@@ -146,11 +146,6 @@ function get(k) {
   // get id of the instance if the last field is reference or collection
   var values = this.query(k, fetchRefId);
 
-  if (!nativeIsArray(values)) {
-    // query contains selector
-    return values;
-  }
-
   if (values.length > 1) {
     return values
       .filter(filter)
@@ -162,8 +157,8 @@ function get(k) {
 
 const fieldRe = /[a-zA-Z]/;
 
-function map(k) {
-  return fieldRe.test(k[0]) ? this.get(k) : k;
+function map(f) {
+  return f && fieldRe.test(f[0]) ? this.get(f) : f;
 }
 
 function filter(v) {
@@ -238,7 +233,13 @@ function info(field) {
     }
   }
 
-  return { field };
+  var info = { field: field[0] };
+
+  if (f && f.type) {
+    info.type = f.type;
+  }
+
+  return info;
 }
 
 export function single(fields) {
@@ -248,7 +249,7 @@ export function single(fields) {
     if (fields) {
       fields = fields
         .split(' ')
-        .filter(f => fieldRe.test(f[0]));
+        .filter(f => f && fieldRe.test(f[0]));
 
       append(single, fields);
     }

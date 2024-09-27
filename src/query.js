@@ -5,6 +5,7 @@ import isUndefined from 'underscore/modules/isUndefined.js';
 
 import { append } from 'helpers/append';
 import { array } from 'helpers/array';
+import { raise, warn } from 'helpers/log';
 import { uniq } from 'helpers/uniq';
 
 import { collection } from './data';
@@ -14,7 +15,7 @@ export function doSequence(records, sequence, options) {
     var step = sequence[i];
 
     if (step.field) {
-      records = doField(records, step, options);
+      records = doField(records, step, sequence, options);
     }
 
     if (step.filter) {
@@ -42,13 +43,14 @@ export function doSequence(records, sequence, options) {
   return records;
 }
 
-function doField(records, step, options) {
-  var next = [];
-  var info, c, i;
+function doField(records, step, sequence, options) {
+  var next = records.length > 0 ? [] : records;
+  var c, i;
 
   for (var j = 0; j < records.length; j++) {
     var record = records[j];
     var result = record[step.field];
+    var info   = null;
 
     if (isFunction(result)) {
       result = result.apply(record, step.args);
@@ -76,6 +78,26 @@ function doField(records, step, options) {
           i.records(info) :  // dual index
           i.data[result];
       }
+      else {
+        warn(  // todo raise ??
+          '"' + record.aka + '"', 'has no loaded',
+          '"' + info.model + '"', 'for query',
+          '"' + sequence.query + '"'
+        );
+      }
+    }
+    else if (info && info.type === 'auto') {
+      // lookup field in object
+      if (result === null) {
+        continue;
+      }
+    }
+    else if (!step.last && record.aka) {
+      warn(  // todo raise ??
+        '"' + record.aka + '"', 'has no reference',
+        '"' + step.field + '"', 'in query',
+        '"' + sequence.query + '"'
+      );
     }
 
     if (isUndefined(result)) {
@@ -108,10 +130,12 @@ export function parse(query) {
   while (braces.length !== (braces = braces.replace(pairBracesRe, '')).length);
 
   if (braces.length !== 0) {
-    throw new Error('parentheses is not balanced in query: "' + query + '"');
+    raise('parentheses is not balanced in query: "' + query + '"');
   }
 
   var sequence = [ query ];
+
+  sequence.query = query;
 
   // split query by dot
   for (var i = 0, depth = 0, prev = 0; i < query.length; i++) {
@@ -219,7 +243,7 @@ function parseFilter(expression) {
   var tail = expression.match(filterRe);
 
   if (!tail || tail.length !== 3) {
-    throw new Error('operator and value is required in filter: "' + expression + '"');
+    raise('operator and value is required in filter: "' + expression + '"');
   }
 
   var field = expression.slice(0, tail.index);
@@ -231,7 +255,7 @@ function parseFilter(expression) {
     return { fn, expression, field, operator, value };
   }
 
-  throw new Error('operator "' + operator + '" is not recognized in filter: "' + expression + '"');
+  raise('operator "' + operator + '" is not recognized in filter: "' + expression + '"');
 }
 
 function makeFilter(field, operator, value) {
