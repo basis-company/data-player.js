@@ -43,10 +43,10 @@ export function doSequence(records, sequence, options) {
 
 function doField(records, step, options) {
   var next = [];
-  var info, c;
+  var info, c, i;
 
-  for (var i = 0; i < records.length; i++) {
-    var record = records[i];
+  for (var j = 0; j < records.length; j++) {
+    var record = records[j];
     var result = record[step.field];
 
     if (isFunction(result)) {
@@ -67,9 +67,13 @@ function doField(records, step, options) {
       ) {
         // get id of the instance if last field is reference
       }
-      else {
+      else if (
         (c = collection(info.model)) &&
-        (result = c.index(info.index).data[result]);
+        (i = c.index(info.index))
+      ) {
+        result = i.keys[1] ?
+          i.records(info) :  // dual index
+          i.data[result];
       }
     }
 
