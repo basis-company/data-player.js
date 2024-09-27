@@ -21,6 +21,14 @@ const views = data.views;
 
 export class View {
   constructor(o) {
+    this.init(o);
+
+    if (this.initialize) {
+      this.initialize(o);
+    }
+  }
+
+  init(o) {
     this.model = model(o.model).aka;
     this.id    = [ 'view', this.model, ++autoId ].join('-');
 
@@ -36,10 +44,6 @@ export class View {
     this.addAnnexes(o.annexes);
 
     applyTo(this, o, 'name');
-
-    if (this.initialize) {
-      this.initialize(o);
-    }
   }
 
   destroy() {
@@ -47,7 +51,25 @@ export class View {
     log(this, 'destroyed', this.destroyed = true);
   }
 
-  async load(params = {}) {
+  addFields(fields) {
+    array(fields).forEach(field => {
+      if (field) {
+        push(this, 'fields', field, 'uniq');
+      }
+    });
+  }
+
+  addAnnexes(annexes) {
+    array(annexes).forEach(func => {
+      this.annexes.push(
+        isFunction(func) ? { func } : func
+      );
+    });
+  }
+
+  async load(params = {}, data) {
+    log(this, 'load', JSON.stringify(params));
+
     if (this.loading) {
       warn(this, 'is already loading');
     }
@@ -57,13 +79,12 @@ export class View {
     delete this.map;
 
     var expeditor = this.getExpeditor(params);
-    var data;
 
     try {
       this.loading = true;
 
       data = this.rawData =  // debug
-      await this.sequent(expeditor);
+      await this.sequent(expeditor, data);
 
       data = this.data = // debug
       await this.produce(expeditor, data);
@@ -144,28 +165,14 @@ export class View {
     return rows;
   }
 
-  addFields(fields) {
-    array(fields).forEach(field => {
-      if (field) {
-        push(this, 'fields', field, 'uniq');
-      }
-    });
-  }
-
-  addAnnexes(annexes) {
-    array(annexes).forEach(func => {
-      this.annexes.push(
-        isFunction(func) ? { func, scope: this } : func
-      );
-    });
-  }
-
   applyRow(src, dst) {
     dst = src.produce(this.fields, dst);
 
-    this.annexes.forEach(annex => {
-      annex.func.call(annex.scope, dst, annex);
-    });
+    for (var i = 0; i < this.annexes.length; i++) {
+      var annex = this.annexes[i];
+
+      annex.func.call(annex.scope || this, dst, annex);
+    }
 
     return dst;
   }
@@ -182,6 +189,17 @@ export class View {
 
     this.addDependency(expeditor);
     this.monCollections();
+
+    this.fireEvent(event, this, data, expeditor);
+
+    if (!this.ready) {
+      this.ready = true;
+      this.fireEvent('ready', this, data, expeditor);
+    }
+  }
+
+  fireEvent() {
+    // implementation
   }
 
   addDependency(expeditor) {
@@ -208,7 +226,7 @@ export class View {
 
           shortest = counter.indexOf(shortest);
           deps[aka] = v[shortest].join('.');
-          this.monCollection(c);
+          this.mon(c, 'change', this.applyChanges, this);
         }
         else {
           warn(this, 'monitor skip non-loaded collection', aka);
@@ -219,8 +237,8 @@ export class View {
     log(this, 'monitor reverse fields', { dependencies: deps });
   }
 
-  monCollection() {
-    // this.mon(c, 'change', this.applyChanges, this);
+  mon() {
+    // implementation
   }
 
   applyChanges(record) {

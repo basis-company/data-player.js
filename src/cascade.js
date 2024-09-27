@@ -1,11 +1,16 @@
 import has from 'underscore/modules/_has.js';
 import isFunction from 'underscore/modules/isFunction.js';
 
+import { applyOwn } from 'helpers/apply';
 import { array } from 'helpers/array';
 import { log, warn } from 'helpers/log';
 
-import { model } from './data';
+import { model, opt } from './data';
 import { single } from './model';
+
+applyOwn(cascade, {
+  collect, propagate, spawn,
+});
 
 export async function cascade(data, fields, expeditor) {
   if (data.length === 0 || fields.length === 0) {
@@ -22,7 +27,7 @@ export async function cascade(data, fields, expeditor) {
     children._previous = previous;
   }
 
-  collect(data, fields, expeditor);
+  cascade.collect(data, fields, expeditor);
 
   var promises = children.map(expeditor =>
     expeditor.sequent()
@@ -46,15 +51,18 @@ function collect(data, fields, expeditor) {
     var sequence = m._parse(field);
     var step     = sequence.find(step => step.field);
     var index    = sequence.indexOf(step);
-    var info     = m._info(step.field);
+    var info;
 
     var tailField = sequence
       .slice(index + 1)
       .map(step => step.chunk)
       .join('.');
 
-    if (info.model) {
-      propagate(data, step, info, tailField, expeditor);
+    if (opt.collect(data, step, m, tailField, expeditor)) {
+      // custom propagate
+    }
+    else if ((info = m._info(step.field)).model) {
+      cascade.propagate(data, step, info, tailField, expeditor);
     }
     else if (isFunction(m[step.field])) {
       var calculated =
@@ -65,7 +73,7 @@ function collect(data, fields, expeditor) {
         fields = array(calculated);
         fields = single(fields);
         log('expand "' + step.field + '" to', { fields });
-        collect(data, fields, expeditor);
+        cascade.collect(data, fields, expeditor);
       }
     }
     else if (m.fieldsMap[step.field] >= 0) {
@@ -91,20 +99,22 @@ function propagate(data, step, info, tailField, expeditor) {
   var child = children[k];
 
   if (!child) {
-    children[k] = child = spawn(data, step, info, expeditor);
+    children[k] = child = cascade.spawn(data, step, info, expeditor);
     children.push(child);
   }
 
   if (tailField) {
     child.fields.push(tailField);
   }
+
+  opt.propagate(child);
 }
 
 function spawn(data, step, info, expeditor) {
   var fields = [];
   var params = {};
 
-  params[info.index] = data.map(row => row[info.field]);
+  params[info.index] = data.map(record => record[info.field]);
 
   if (step.filter) {
     step.filter.list.forEach(filter => {
@@ -116,6 +126,8 @@ function spawn(data, step, info, expeditor) {
       }
     });
   }
+
+  opt.spawn(params, info);
 
   return expeditor.spawn({
     field:      step.field,

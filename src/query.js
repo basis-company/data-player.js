@@ -4,27 +4,32 @@ import isFunction from 'underscore/modules/isFunction.js';
 import isUndefined from 'underscore/modules/isUndefined.js';
 
 import { append } from 'helpers/append';
+import { applyOwn } from 'helpers/apply';
 import { array } from 'helpers/array';
 import { raise, warn } from 'helpers/log';
 import { uniq } from 'helpers/uniq';
 
 import { collection } from './data';
 
+applyOwn(doSequence, {
+  doField, doFilter, doSelector,
+});
+
 export function doSequence(records, sequence, options) {
   for (var i = 0; i < sequence.length; i++) {
     var step = sequence[i];
 
     if (step.field) {
-      records = doField(records, step, sequence, options);
+      records = doSequence.doField(records, step, sequence, options);
     }
 
     if (step.filter) {
-      records = records.filter(step.filter.fn);
+      records = doSequence.doFilter(records, step);
     }
 
     if (
       step.last &&
-      options && options.fetchRefId &&
+      options.fetchRefId &&
       records[0] && has(records[0], 'id')
     ) {
       // get id of the instance if the last field is reference or collection
@@ -35,7 +40,7 @@ export function doSequence(records, sequence, options) {
     }
 
     if (step.selector) {
-      records = step.selector.fn(records);
+      records = doSequence.doSelector(records, step);
       records = array(records);
     }
   }
@@ -64,7 +69,7 @@ function doField(records, step, sequence, options) {
 
       if (
         step.last &&
-        options && options.fetchRefId &&
+        options.fetchRefId &&
         info.field === step.field &&
         !step.filter
       ) {
@@ -112,6 +117,14 @@ function doField(records, step, sequence, options) {
   }
 
   return next;
+}
+
+function doFilter(records, step) {
+  return records.filter(step.filter.fn);
+}
+
+function doSelector(records, step) {
+  return step.selector.fn(records);
 }
 
 const nonBracesRe   = /[^()[\]{}]+/g;
@@ -321,7 +334,7 @@ const selectors = {
   sum,
   avg:    (values) => values.length > 0 ? sum(values) / values.length : null,
   count:  (values) => values.length || null,
-  unique: uniq,
+  unique: uniq,  // deprecated
   uniq,
 };
 

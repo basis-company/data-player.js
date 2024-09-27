@@ -105,7 +105,7 @@ export class Expeditor {
   filter(data) {
     // filter extra only in root request
     if (this.isRoot()) {
-      data = data.filter(row => !row.extra);
+      data = data.filter(record => !record.extra);
     }
 
     return data;
@@ -123,12 +123,12 @@ export class Expeditor {
     return data;
   }
 
-  _ranger(row) {
+  _ranger(record) {
     var min   = this.range[0];
     var max   = this.range[1];
 
-    var begin = row[this.names.edge[0]];
-    var end   = row[this.names.edge[1]];
+    var begin = record[this.names.edge[0]];
+    var end   = record[this.names.edge[1]];
 
     return (!begin || begin <= max) && (!end || min <= end);
   }
