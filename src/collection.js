@@ -55,15 +55,15 @@ export class Collection {
 
       if (m) {
         var onetime = keys.some(k => {
-          var step = m._parse(k).find(step => step.field);
-          var info = m._info(step.field);
+          var field = m._parse(k).find(step => step.field).field;
+          var own   = m.fields.find(f => f.name === field || f.aka === field);
 
           // one-to-many relation
-          return info.model && info.index !== 'id';
+          return !own;
         });
 
         if (onetime) {
-          log(this, 'one-time', { index: i });
+          log(m, 'one-time', { index: i });
           delete this.indexes[k];
         }
       }
