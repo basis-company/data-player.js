@@ -16,11 +16,14 @@ export const data = {
   views: {},
 };
 
+export const emptyArr = [];
 export const fetchRefId = { fetchRefId: true };
 export const oneElArr = [ null ];
 
 export const opt = {
   akaRe: '',
+  backrefs,
+  backverse,
   classify: false,
   extra: false,
   keySorter: false,  // (a, b) => a <=> b
@@ -79,6 +82,14 @@ export function findOrFail(name, params) {
 
 export function index(name, ...keys) {
   return collection(name).index(...keys);
+}
+
+function backrefs(m, name) {
+  return ((oneElArr[0] = model(name))) ? oneElArr : emptyArr;
+}
+
+function backverse(m, suf) {
+  return m.aka + suf;
 }
 
 function indexes() {

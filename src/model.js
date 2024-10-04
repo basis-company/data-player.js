@@ -46,13 +46,16 @@ export function register(proto) {
 
   class Model extends Basic {}
 
-  proto = applyOwn(Model.prototype, proto, {
+  proto = applyOwn(Model.prototype, proto);
+
+  applyOwn(proto, {
     origin: proto.key ? proto.key.join('-') : 'id',
     idValues: idFields.slice(),
     idFields,
     fieldsMap,
-    _info: memoize(info),
-    _parse: memoize(parse),
+    _info: memoize(proto.info),
+    _parse: memoize(proto.parse),
+    _model: () => proto,
   });
 
   delete proto.key;
@@ -96,7 +99,8 @@ export class Basic {
 }
 
 applyOwn(Basic.prototype, {
-  get, produce, query,
+  get, info, parse,
+  produce, query,
 });
 
 function id(dst, fields, values) {
@@ -179,46 +183,59 @@ function query(query, options) {
 //   которое можно найти в целевой модели "model" в ключе "index",
 //   а из целевой модели перейти обратно в исходную модель через поле "inverse"
 function info(field) {
-  var property = this.fields.find(f => f.name === field || f.aka === field);
+  var f = this.fields.find(f => f.name === field || f.aka === field);
 
-  if (property) {
-    field = property.name;
+  if (f) {
+    field = f.name;
   }
 
-  if (property && property.reference) {
-    m    = model(property.reference);
-    ids  = m.idFields;
-    name = property.property;
+  if (f && f.reference) {
+    var m = model(f.reference);
 
-    // Поле "field" присутствует в исходной модели.
-    // Пример query: поиск значения в справочнике
+    var suf = this.fields
+      .filter(f => f.reference === m.name)
+      .indexOf(f) > 0 ? '@' + field : '';
+
+    var index =
+      m.idFields.length === 1 &&
+      m.idFields[0] !== f.property ?
+        f.property :
+        'id';
+
     return {
       field,
-      // inverse: this.aka + '@' + field,
+      inverse: opt.backverse(this, suf),
       model: m.aka,
-      index: ids && ids.length === 1 && ids[0] !== name ? name : 'id',
+      index,
     };
   }
 
-  if (
-    (m = model(field)) &&
-    (property = m.fields.find(f =>
-      model(f.reference) &&
-      model(f.reference).aka === this.aka)
-    )
-  ) {
-    var ids  = m.idFields;
-    var name = property.name;
-    var m;
+  field = field.split('@');
 
-    // Поле "field" отсутствует в исходной модели, тогда "field" = целевая "model"
-    // Пример query: найти задания на объекте
-    return {
-      field: property.property,
-      inverse: name,
-      model: field,
-      index: ids && ids.length === 1 && ids[0] === name ? 'id' : name,
-    };
+  var refs = opt.backrefs(this, field[0]);
+  var name = this._model().name;
+
+  for (var i = 0, r; i < refs.length; i++) {
+    if (
+      (m = refs[i]) &&
+      (r = m.fields.find(f =>
+        f.reference === name &&
+        (!field[1] || field[1] === f.name)
+      ))
+    ) {
+      index =
+        m.idFields.length === 1 &&
+        m.idFields[0] === r.name ?
+          'id' :
+          r.name;
+
+      return {
+        field: r.property,
+        inverse: r.name,
+        model: m.aka,
+        index,
+      };
+    }
   }
 
   return { field };
