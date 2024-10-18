@@ -10,7 +10,7 @@ import { memoize } from 'helpers/memoize';
 import { transform } from 'helpers/transform';
 import { uniq } from 'helpers/uniq';
 
-import { fetchRefId, model, oneElArr, opt } from './data';
+import { emptyObj, fetchRefId, model, oneElArr, opt } from './data';
 import { doSequence, parse } from './query';
 
 export function register(proto) {
@@ -165,7 +165,7 @@ function filter(v) {
   return !isUndefined(v) && v !== '';
 }
 
-function query(query, options) {
+function query(query, options = emptyObj) {
   var sequence = this._parse(query);
 
   oneElArr[0] = this;

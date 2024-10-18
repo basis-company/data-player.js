@@ -26,15 +26,21 @@ export function register(name, records) {
 
 export class Collection {
   constructor(name) {
+    this.init(name);
+
+    if (this.initialize) {
+      this.initialize(name);
+    }
+  }
+
+  init(name) {
+    delete this.model;
+
     this.indexes = {};
     this.index('');
 
     if (name) {
-      this.model = name;
-    }
-
-    if (this.initialize) {
-      this.initialize(name);
+      this.model = name.model || name;
     }
   }
 
@@ -119,6 +125,12 @@ export class Collection {
         }
       }
     }
+
+    this.fireEvent('change', records);
+  }
+
+  fireEvent() {
+    // implementation
   }
 
   find(params = {}, buffer) {

@@ -1,7 +1,7 @@
 import { nativeIsArray } from 'underscore/modules/_setup.js';
 import noop from 'underscore/modules/noop.js';
 
-import { applyOwnIf } from 'helpers/apply';
+import { applyOwn, applyOwnIf } from 'helpers/apply';
 import { empty } from 'helpers/empty';
 import { push } from 'helpers/push';
 import { remove as aRemove } from 'helpers/remove';
@@ -10,15 +10,19 @@ import { data } from './data';
 
 const similars = data.similars;
 
-export function add(loader) {
+applyOwn(similar, {
+  add, remove,
+});
+
+function add(loader) {
   push(similars, loader.model, loader);
 }
 
-export function remove(loader) {
+function remove(loader) {
   aRemove(similars[loader.model], loader);
 }
 
-export function find(loader, o) {
+export function similar(loader, o) {
   var list = similars[loader.model];
   var partials, shrunken;
 

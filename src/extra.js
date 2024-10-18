@@ -35,7 +35,7 @@ export async function extra(expeditor) {
   warn('extra "' + top.model + '"', { [field]: ids }, { expeditor });
 
   if ((n[k] = opt.extra)) {
-    n[k] = opt.extra(top.model, ids, field);
+    n[k] = opt.extra(top.model, ids, field, expeditor.model);
     await register(await n[k], expeditor);
     n[k] = null;
   }
@@ -50,7 +50,9 @@ function fields(expeditor) {
 }
 
 function plans(expeditor) {
-  var ids = absent(expeditor);
+  var ids =
+    opt.absent(expeditor) ||
+    absent(expeditor);
 
   // skip full data
   if (!ids || ids.length === 0) {
@@ -70,15 +72,15 @@ function plans(expeditor) {
   field = field.join('.');
 
   // reduce source records poined to the same absent target record
-  top.data.some(row => {
+  top.data.some(record => {
     var source = field ?
-      row.query(field, fetchRefId) :
-      [ row.id ];
+      record.query(field, fetchRefId) :
+      [ record.id ];
 
     source.forEach((id, i) => {
       if ((i = ids.indexOf(id)) !== -1) {
         ids.splice(i, 1);
-        map[row.id] = row.id;
+        map[record.id] = record.id;
       }
     });
 
@@ -115,7 +117,7 @@ function register(data, expeditor) {
   );
 
   if (expeditor.index === 'id') {
-    extrify(data);
+    data = extrify(data, target);
     collection(target).splice(data);
   }
   else if (opt.classify) {
@@ -136,14 +138,20 @@ async function classify(data, target) {
   var valid   = result.valid  .map(id => hash[id]);
   var invalid = result.invalid.map(id => hash[id]);
 
-  extrify(invalid);
+  invalid = extrify(invalid, target);
 
   collection(target).splice(valid);
   collection(target).splice(invalid);
 }
 
-function extrify(data) {
+function extrify(data, target) {
+  if (opt.extrify) {
+    data = opt.extrify(data, target);
+  }
+
   data.forEach(record =>
     record.extra = true
   );
+
+  return data;
 }

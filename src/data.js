@@ -17,17 +17,24 @@ export const data = {
 };
 
 export const emptyArr = [];
+export const emptyObj = {};
 export const fetchRefId = { fetchRefId: true };
 export const oneElArr = [ null ];
 
 export const opt = {
+  absent: noop,
   akaRe: '',
   backrefs,
   backverse,
   classify: false,
+  collect: noop,
   extra: false,
+  extrify: false,
   keySorter: false,  // (a, b) => a <=> b
+  propagate: noop,
+  purify: noop,
   request: noop,
+  spawn: noop,
 };
 
 export function init(config) {

@@ -8,10 +8,10 @@ import { push } from 'helpers/push';
 import { transform } from 'helpers/transform';
 
 import { cascade } from './cascade';
-import { collection, model } from './data';
+import { collection, model, opt } from './data';
 import { extra } from './extra';
 import { Request } from './request';
-import * as Similar from './similar';
+import { similar } from './similar';
 
 export class Loader extends Request {
   init(o) {
@@ -79,17 +79,24 @@ export class Loader extends Request {
   purify() {
     var fields = nativeKeys(this.params);
     var m = model(this.model);
+    var info;
 
     return transform(fields, (promises, field) => {
       var [ f1, f2, f3 ] = m._parse(field).map(step => step.field);
-      var info = m._info(f1);
 
-      if (m.fieldsMap[f1] >= 0) {
+      if (
+        m.fieldsMap[f1] >= 0 &&
+        !opt.purify(this, f1)
+      ) {
         if (!f2) {
           return;
         }
 
-        if (info.model && !f3 && !model(info.model)._info(f2).model) {
+        if (
+          !f3 &&
+          (info = m._info(f1)).model &&
+          !model(info.model)._info(f2).model
+        ) {
           var loader = new Loader({
             model: info.model,
             params: { [f2]: this.params[field] },
@@ -98,7 +105,7 @@ export class Loader extends Request {
           var promise = loader.fetch()
             .then(data => {
               data = loader.local(loader.params);
-              this.addParam(f1, data.map(row => row.id));
+              this.addParam(f1, data.map(record => record.id));
               delete this.params[field];
             });
 
@@ -114,21 +121,21 @@ export class Loader extends Request {
 
   async fetch() {
     var partials = {};
-    var promise, similar;
+    var promise, s;
 
-    if ((similar = Similar.find(this, partials))) {
-      promise = similar.promise;
+    if ((s = similar(this, partials))) {
+      promise = s.promise;
     }
-    else if ((similar = partials.similar)) {
-      Similar.add(this);
+    else if ((s = partials.similar)) {
+      similar.add(this);
 
       await Promise.all([
-        promise = this.request(similar.params),
-        similar.promise, // wait similar for extra
+        promise = this.request(s.params),
+        s.promise,  // wait similar for extra
       ]);
     }
     else {
-      Similar.add(this);
+      similar.add(this);
 
       promise = this.request(this.params);
     }
@@ -142,7 +149,7 @@ export class Loader extends Request {
 
   cascade(data, expeditor) {
     if (expeditor.isRoot()) {
-      expeditor.data = data;
+      expeditor.data = data.filter(record => !record.extra);
     }
 
     return cascade(data, this.fields, expeditor);
@@ -176,9 +183,9 @@ export class Loader extends Request {
   }
 }
 
-function filter(row, params) {
+function filter(record, params) {
   for (var field in params) {
-    if (!validate(row, field, params[field])) {
+    if (!validate(record, field, params[field])) {
       return false;
     }
   }
@@ -186,13 +193,13 @@ function filter(row, params) {
   return true;
 }
 
-function validate(row, field, value) {
+function validate(record, field, value) {
   if (!nativeIsArray(value)) {
-    return value == row.get(field);  // eslint-disable-line eqeqeq
+    return value == record.get(field);  // eslint-disable-line eqeqeq
   }
 
   for (var i = 0; i < value.length; i++) {
-    if (validate(row, field, value[i])) {
+    if (validate(record, field, value[i])) {
       return true;
     }
   }
