@@ -16,8 +16,11 @@ export class Request {
     }
   }
 
-  init() {
-    // nop
+  init(o) {
+    if (o.range) {
+      this.names = o.names;
+      this.range = o.range;
+    }
   }
 
   async request(params) {
@@ -68,7 +71,8 @@ export class Request {
 
   expandRange(params) {
     // "names" without range is forbidden
-    if (!this.range || !(ymd = this.names.ymd)) {
+    // avoid mix "id" with "names"
+    if (!this.range || !(ymd = this.names.ymd) || params.id) {
       return [ params ];
     }
 

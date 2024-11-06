@@ -1,8 +1,8 @@
 import { nativeIsArray, nativeKeys } from 'underscore/modules/_setup.js';
 
-import { applyTo } from 'helpers/apply';
 import { array } from 'helpers/array';
 import { copyOwn } from 'helpers/copy';
+import { warn } from 'helpers/log';
 import { ns } from 'helpers/ns';
 import { push } from 'helpers/push';
 import { transform } from 'helpers/transform';
@@ -20,8 +20,6 @@ export class Loader extends Request {
     this.fields = o.fields || [];
     this.model  = model(o.model).aka;
     this.params = o.params ? copyOwn(o.params) : {};
-
-    applyTo(this, o, 'names', 'range');
   }
 
   addField(field) {
@@ -36,7 +34,7 @@ export class Loader extends Request {
 
   async load(expeditor, data) {
     if (this.promise) {
-      expeditor.warn('is already loading');
+      warn(expeditor, 'is already loading');
     }
 
     this.promise = this.doLoad(expeditor, data);

@@ -2,6 +2,7 @@ import noop from 'underscore/modules/noop.js';
 
 import { applyOwn, applyTo } from 'helpers/apply';
 import { indexBy } from 'helpers/arrayBy';
+import { ymd } from 'helpers/datetime';
 import { empty } from 'helpers/empty';
 import { log, raise } from 'helpers/log';
 import { uniq } from 'helpers/uniq';
@@ -24,7 +25,9 @@ export class Expeditor {
       addParam(field, o.params[field], this);
     }
 
-    applyTo(this, o, '_parent', 'field', 'index', 'name', 'nullable', 'range');
+    applyTo(this, o, '_parent', 'field', 'index', 'name', 'nullable');
+
+    this.range(o.range);
     this.names();
 
     if (this.initialize) {
@@ -32,13 +35,42 @@ export class Expeditor {
     }
   }
 
+  range(range) {
+    var p = this.params;
+
+    if (p && !range && this.isRoot()) {
+      if (p.year) {
+        p.minYmd =
+          ymd(new Date(p.year, (p.month || 1) - 1, p.day || 1));
+
+        p.maxYmd = p.day ? p.minYmd :
+          ymd(new Date(p.year,  p.month || 12,  0));
+
+        delete p.year;
+        delete p.month;
+        delete p.day;
+      }
+
+      if (p.minYmd || p.maxYmd) {
+        range = [
+          p.minYmd || p.maxYmd,
+          p.maxYmd || p.minYmd,
+        ];
+
+        delete p.minYmd;
+        delete p.maxYmd;
+      }
+    }
+
+    this.range = range;
+  }
+
   names() {
     if (
       !(this.names = this.getNames()) ||
       !this.names.ymd && !this.names.edge
     ) {
-      this.names = null;
-      delete this.range;
+      this.names = {};
       return;
     }
 
@@ -93,13 +125,22 @@ export class Expeditor {
   load(data) {
     log(this, 'load "' + this.model + '"', this.params, { expeditor: this });
 
-    return new Loader({
-      model:  this.model,
-      names:  this.names,
-      params: this.params,
-      range:  this.range,
-    })
+    return this.getLoader()
       .load(this, data);
+  }
+
+  getLoader() {
+    var o = {
+      model:  this.model,
+      params: this.params,
+    };
+
+    if (!empty(this.names)) {
+      o.names = this.names;
+      o.range = this.range;
+    }
+
+    return new Loader(o);
   }
 
   filter(data) {
@@ -112,7 +153,7 @@ export class Expeditor {
   }
 
   isRanged() {
-    return Boolean(this.range && this.names && this.names.edge);
+    return Boolean(this.range && this.names.edge);
   }
 
   ranger(data) {

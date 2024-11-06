@@ -86,7 +86,7 @@ export class View {
       data = this.rawData =  // debug
       await this.sequent(expeditor, data);
 
-      data = this.data = // debug
+      data = this.data =  // debug
       await this.produce(expeditor, data);
     }
     finally {
@@ -98,17 +98,7 @@ export class View {
     }
   }
 
-  getExpeditor(params, range) {
-    if (params.minYmd || params.maxYmd) {
-      range = range || [
-        params.minYmd || params.maxYmd,
-        params.maxYmd || params.minYmd,
-      ];
-
-      delete params.minYmd;
-      delete params.maxYmd;
-    }
-
+  getExpeditor(params) {
     var fields = single(this.fields);
 
     // skip annexes
@@ -124,7 +114,6 @@ export class View {
       model:    this.model,
       fields,
       params,
-      range,
     });
   }
 
@@ -251,7 +240,7 @@ export class View {
   }
 
   monBuffer(record) {
-    if (this.expeditor.aborted('buffer record in denied state')) {
+    if (this.expeditor.aborted()) {
       return;
     }
 
