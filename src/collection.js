@@ -90,6 +90,10 @@ export class Collection {
     var isTuple  = nativeIsArray(record);
     var isRecord = m && record instanceof m.constructor;
 
+    if (doRemove === 'extra') {
+      var doExtra = !(doRemove = false);
+    }
+
     for (var j = 0; j < records.length; j++) {
       record = records[j];
 
@@ -114,6 +118,9 @@ export class Collection {
           records.splice(j--, 1);
         }
       }
+      else if (doExtra) {
+        this.extrify(record, exist);
+      }
 
       for (var k in this.indexes) {
         if (exist) {
@@ -127,6 +134,12 @@ export class Collection {
     }
 
     this.fireEvent('change', records);
+  }
+
+  extrify(record, exist) {
+    if (!exist || exist.extra) {
+      record.extra = true;
+    }
   }
 
   fireEvent() {

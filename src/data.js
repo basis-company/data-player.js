@@ -29,7 +29,6 @@ export const opt = {
   classify: false,
   collect: noop,
   extra: false,
-  extrify: false,
   keySorter: false,  // (a, b) => a <=> b
   propagate: noop,
   purify: noop,

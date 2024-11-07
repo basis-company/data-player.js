@@ -1,6 +1,6 @@
 import { array } from 'helpers/array';
 import { indexBy } from 'helpers/arrayBy';
-import { warn } from 'helpers/log';
+import { log } from 'helpers/log';
 import { ns } from 'helpers/ns';
 
 import { collection, data, fetchRefId, model, opt } from './data';
@@ -32,7 +32,7 @@ export async function extra(expeditor) {
     return n[k];
   }
 
-  warn('extra "' + top.model + '"', { [field]: ids }, { expeditor });
+  log('extra "' + top.model + '"', { [field]: ids }, { expeditor });
 
   if ((n[k] = opt.extra)) {
     n[k] = opt.extra(top.model, ids, field, expeditor.model);
@@ -59,7 +59,7 @@ function plans(expeditor) {
     return;
   }
 
-  warn('extra "' + expeditor.model + '"', { absent: ids.slice() });
+  log('extra "' + expeditor.model + '"', { absent: ids.slice() });
 
   var field = fields(expeditor);
   var top   = expeditor.bubble();
@@ -117,8 +117,7 @@ function register(data, expeditor) {
   );
 
   if (expeditor.index === 'id') {
-    data = extrify(data, target);
-    collection(target).splice(data);
+    collection(target).splice(data, 'extra');
   }
   else if (opt.classify) {
     return classify(data, target);
@@ -138,20 +137,6 @@ async function classify(data, target) {
   var valid   = result.valid  .map(id => hash[id]);
   var invalid = result.invalid.map(id => hash[id]);
 
-  invalid = extrify(invalid, target);
-
   collection(target).splice(valid);
-  collection(target).splice(invalid);
-}
-
-function extrify(data, target) {
-  if (opt.extrify) {
-    data = opt.extrify(data, target);
-  }
-
-  data.forEach(record =>
-    record.extra = true
-  );
-
-  return data;
+  collection(target).splice(invalid, 'extra');
 }
