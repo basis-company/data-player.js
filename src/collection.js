@@ -62,9 +62,11 @@ export class Collection {
       if (m) {
         var onetime = keys.some(k => {
           var field = m._parse(k).find(step => step.field).field;
-          var own   = m.fields.find(f => f.name === field || f.aka === field);
 
-          // one-to-many relation
+          var own =
+            field === 'id' ||
+            m.fields.find(f => f.name === field || f.aka === field);
+
           return !own;
         });
 
