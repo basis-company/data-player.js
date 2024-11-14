@@ -16,7 +16,7 @@ import { doSequence, parse } from './query';
 export function register(proto) {
   proto = copyOwn(proto);
 
-  var name = proto.name;
+  var name = proto._name || proto.name;
   var aka  = proto.aka = name.replace(opt.akaRe, '');
 
   var idFields =
@@ -55,7 +55,6 @@ export function register(proto) {
     fieldsMap,
     _info: memoize(proto.info),
     _parse: memoize(proto.parse),
-    _model: () => proto,
   });
 
   delete proto.key;
@@ -72,8 +71,8 @@ export class Basic {
     var m = this;
 
     if (nativeIsArray(o)) {
-      for (var i = 0, len = o.length; i < len; i++) {
-        this[m.fields[i].name] = o[i];
+      for (var i = 0, len = o.length, fields = m.fields; i < len; i++) {
+        this[fields[i].name] = o[i];
       }
     }
     else {
@@ -186,9 +185,10 @@ function info(field) {
 
   if (f && f.reference) {
     var m = model(f.reference);
+    var name = m._name || m.name;
 
     var suf = this.fields
-      .filter(f => f.reference === m.name)
+      .filter(f => f.reference === name)
       .indexOf(f) > 0 ? '@' + field : '';
 
     var index =
@@ -206,9 +206,9 @@ function info(field) {
   }
 
   field = field.split('@');
+  name  = this._name || this.name;
 
   var refs = opt.backrefs(this, field[0]);
-  var name = this._model().name;
 
   for (var i = 0, r; i < refs.length; i++) {
     if (

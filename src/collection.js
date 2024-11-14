@@ -13,7 +13,7 @@ export function register(name, records) {
     var m = model(name);
     var c = new Collection(m.aka);
 
-    collection(m.name, c);
+    collection(m._name || m.name, c);
     collection(m.aka, c);
   }
 
