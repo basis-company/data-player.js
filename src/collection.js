@@ -91,6 +91,7 @@ export class Collection {
     var record   = records[0];
     var isTuple  = nativeIsArray(record);
     var isRecord = m && record instanceof m.constructor;
+    var isObject = !isTuple && !isRecord;
 
     if (doRemove === 'extra') {
       var doExtra = !(doRemove = false);
@@ -99,17 +100,19 @@ export class Collection {
     for (var j = 0; j < records.length; j++) {
       record = records[j];
 
-      if (m) {
-        if (isTuple || !isRecord) {
-          record = records[j] = m.create(record);
-        }
+      if (isTuple && m) {
+        record = records[j] = m.create(record);
       }
 
       var values = i.records(record);
       var exist  = values && values[0];
 
-      if (exist && !isTuple && !isRecord) {
+      if (isObject && exist) {
         applyOwnIf(record, exist);
+      }
+
+      if (isObject && m) {
+        record = records[j] = m.create(record);
       }
 
       if (doRemove) {
