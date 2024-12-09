@@ -63,10 +63,6 @@ function doField(records, step, sequence, options) {
     else if (record._info && (info = record._info(step.field)).model) {
       result = record[info.field];
 
-      if (result === 0 || result === null) {
-        continue;
-      }
-
       if (
         step.last &&
         options.fetchRefId &&
@@ -74,6 +70,9 @@ function doField(records, step, sequence, options) {
         !step.filter
       ) {
         // get id of the instance if last field is reference
+      }
+      else if (result === 0 || result === null) {
+        continue;
       }
       else if (
         (c = collection(info.model)) &&
