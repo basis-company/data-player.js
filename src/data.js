@@ -33,6 +33,7 @@ export const opt = {
   propagate: noop,
   purify: noop,
   request: noop,
+  selectors: {},
   spawn: noop,
 };
 

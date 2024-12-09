@@ -9,7 +9,7 @@ import { array } from 'helpers/array';
 import { raise, warn } from 'helpers/log';
 import { uniq } from 'helpers/uniq';
 
-import { collection } from './data';
+import { collection, opt } from './data';
 
 applyOwn(doSequence, {
   doField, doFilter, doSelector,
@@ -325,7 +325,7 @@ function parseSelector(selector) {
   }
 }
 
-const selectors = {
+const selectors = applyOwn(opt.selectors, {
   first:  (values) => values[0],
   last:   (values) => values[values.length - 1],
   max:    (values) => values.length > 0 ? Math.max.apply(Math, values) : null,
@@ -335,7 +335,7 @@ const selectors = {
   count:  (values) => values.length || null,
   unique: uniq,  // deprecated
   uniq,
-};
+});
 
 function sum(values) {
   var sum = null;
