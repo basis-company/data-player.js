@@ -171,9 +171,14 @@ export class Loader extends Request {
   filter(data, params) {
     var filtered = [];
 
-    for (var i = 0; i < data.length; i++) {
-      if (filter(data[i], params)) {
-        filtered.push(data[i]);
+    params = this.expandRange(params);
+
+    for (var j = 0; j < data.length; j++) {
+      for (var i = 0; i < params.length; i++) {
+        if (filter(data[j], params[i])) {
+          filtered.push(data[j]);
+          break;
+        }
       }
     }
 
