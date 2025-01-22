@@ -88,6 +88,7 @@ function doField(records, step, sequence, options) {
           '"' + info.model + '"', 'for query',
           '"' + sequence.query + '"'
         );
+        continue;
       }
     }
     else if (info && info.type === 'auto') {
